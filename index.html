@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARTHOUSE MOBILYA | Договор</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eee;color:#222;font:14px Arial,sans-serif}
+.page{max-width:950px;margin:25px auto;background:white;padding:35px 45px;box-shadow:0 2px 15px #0002}
+h1{text-align:center;letter-spacing:4px;font-size:25px}
+h2{text-align:center;font-size:17px}
+h3{font-size:14px;border-bottom:1px solid #bbb;padding-bottom:6px;margin-top:22px}
+p{font-size:12px;line-height:1.5;margin:6px 0}
+input,textarea{font:inherit;border:0;border-bottom:1px solid #999;padding:5px;background:#fafafa;min-width:0}
+textarea{width:100%;border:1px solid #aaa;min-height:65px;resize:vertical}
+input:focus,textarea:focus{outline:1px solid #888}
+.field{display:flex;align-items:center;gap:6px;margin:7px 0;font-size:12px}
+.field input{flex:1;width:100%}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px}
+.signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.signature{border:1px solid #aaa;padding:10px;border-radius:4px}
+canvas{width:100%;height:110px;display:block;touch-action:none;background:white;border-bottom:1px solid #aaa}
+button{border:0;padding:11px 18px;background:#222;color:white;border-radius:5px;cursor:pointer}
+button.gray{background:#666}
+button.red{background:#a33}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px}
+small{font-size:10px;color:#777}
+.static{font-size:12px;line-height:1.5}
+@media(max-width:600px){
+.page{margin:0;padding:18px}
+.grid,.signature-grid{grid-template-columns:1fr}
+}
+@media print{
+@page{size:A4;margin:12mm}
+body{background:white}
+.page{margin:0;padding:0;max-width:none;box-shadow:none}
+.actions,.no-print{display:none!important}
+input,textarea{background:white!important;color:black}
+textarea{resize:none}
+h3{break-after:avoid}
+.signature{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<h1>ARTHOUSE MOBILYA</h1>
+<h2>ДОГОВОР НА ИЗГОТОВЛЕНИЕ МЕБЕЛИ НА ЗАКАЗ № <input data-save="number" placeholder="001" style="width:65px"></h2>
+
+<div class="grid">
+<div class="field">Город: <input value="Астана" data-save="city"></div>
+<div class="field">Дата: <input type="date" data-save="date"></div>
+</div>
+
+<h3>1. СТОРОНЫ ДОГОВОРА</h3>
+<p><b>Исполнитель:</b> ИП «ARTHOUSE_MOBILYA»</p>
+<p>Руководитель: Ерболат қызы Бибігүл</p>
+<div class="grid">
+<div class="field">Заказчик, ФИО: <input data-save="client"></div>
+<div class="field">ИИН: <input data-save="iin"></div>
+<div class="field">Адрес: <input data-save="address"></div>
+<div class="field">Телефон: <input data-save="phone"></div>
+</div>
+
+<h3>2. ПРЕДМЕТ ДОГОВОРА</h3>
+<p>2.1. Исполнитель обязуется изготовить мебель на заказ по индивидуальному проекту Заказчика, а Заказчик обязуется принять и оплатить результат работ.</p>
+<p>2.2. Характеристики мебели (эскизы, чертежи, спецификация) указаны в Приложении №1.</p>
+<p>2.3. Приложение №1 является неотъемлемой частью настоящего договора.</p>
+
+<h3>3. СОГЛАСОВАНИЕ ПРОЕКТА</h3>
+<p>3.1. Перед запуском в производство согласовываются все размеры, материалы и цвет изделия.</p>
+<p>3.2. Окончательные размеры утверждаются после проведения контрольного замера помещения.</p>
+<p>3.3. Контрольный замер производится только после полной готовности помещения Заказчика, включая завершённые черновые и чистовые работы, влияющие на размеры (полы, стены, потолки, плитка и др.).</p>
+<p>3.4. Заказчик обязуется уведомить Исполнителя о готовности помещения к замеру не менее чем за 1 (один) день.</p>
+<p>3.5. Если помещение не готово к замеру в согласованные сроки или Заказчик переносит дату замера, срок изготовления мебели автоматически сдвигается на период такой задержки без применения штрафных санкций к Исполнителю.</p>
+<p>3.6. Срок изготовления мебели начинает исчисляться с момента наступления позднего из следующих событий:</p>
+<p>3.6.1. Проведения контрольного замера;</p>
+<p>3.6.2. Окончательного утверждения проекта;</p>
+<p>3.6.3. Получения предоплаты (если она не была внесена ранее).</p>
+<p>3.7. Исполнитель не несёт ответственности за несоблюдение сроков изготовления, если задержка вызвана неподготовленностью помещения или переносами замера по инициативе Заказчика.</p>
+
+<h3>4. СРОКИ ИСПОЛНЕНИЯ</h3>
+<div class="field">4.1. Срок изготовления: <input data-save="days" type="number" style="max-width:100px"> рабочих дней с момента наступления события, указанного в пункте 3.6.</div>
+
+<h3>5. СТОИМОСТЬ И ОПЛАТА</h3>
+<div class="field">5.1. Общая стоимость работ: <input data-save="total" placeholder="Сумма в тенге"> тенге.</div>
+<p>5.2. Стоимость, указанная в договоре, действительна на момент согласования проекта, составления договора и внесения предоплаты. В случае изменения цен на материалы, фурнитуру, курсов валют или иных объективных факторов до фактического поступления предоплаты Исполнитель вправе корректировать стоимость. Любые изменения согласовываются с Заказчиком письменно до начала производства.</p>
+<p>5.3. Порядок оплаты:</p>
+<div class="grid">
+<div class="field">5.3.1. Предоплата: <input data-save="prepayment" type="number"> %</div>
+<div class="field">5.3.2. Остаток: <input data-save="balance" type="number"> %</div>
+</div>
+<p>Остаток оплачивается не позднее чем за 2 (два) рабочих дня до даты доставки.</p>
+
+<h3>6. ТЕХНОЛОГИЧЕСКИЕ ДОПУСКИ</h3>
+<p>6.1. Допускаются технологические зазоры в пределах 2–3 мм.</p>
+<p>6.2. Незначительные отличия оттенков материалов (крашеных фасадов) считаются нормой и не являются браком.</p>
+
+<h3>7. КОМПЛЕКТАЦИЯ И ДОПОЛНИТЕЛЬНЫЕ ЭЛЕМЕНТЫ</h3>
+<p>7.1. Бытовая техника и сантехнические подключения в стоимость не входят.</p>
+<p>7.2. Рекомендуется выполнение работ по подключению квалифицированными специалистами.</p>
+
+<h3>8. ДОПОЛНИТЕЛЬНЫЕ РАБОТЫ</h3>
+<p>8.1. Работы и материалы, не указанные в Приложении №1, оплачиваются отдельно.</p>
+
+<h3>9. ИЗМЕНЕНИЕ ПРОЕКТА</h3>
+<p>9.1. В случае изменения размеров, конструкции или материалов стоимость и сроки могут быть скорректированы.</p>
+<p>9.2. Все изменения фиксируются письменно.</p>
+
+<h3>10. ГАРАНТИЯ</h3>
+<p>10.1. Гарантия на изделие составляет 12 месяцев.</p>
+<p>10.2. Гарантия распространяется на конструкцию и фурнитуру.</p>
+<p>10.3. Гарантия не распространяется на:</p>
+<p>10.3.1. Механические повреждения;</p>
+<p>10.3.2. Неправильную эксплуатацию;</p>
+<p>10.3.3. Воздействие влаги.</p>
+
+<h3>11. ДОСТАВКА И УСТАНОВКА</h3>
+<p>11.1. Доставка и установка мебели включены в стоимость.</p>
+<p>11.2. Заказчик обязуется обеспечить готовность помещения для установки (завершение ремонтных работ, доступ к объекту, наличие электричества и свободного пространства).</p>
+<p>11.3. В случае неготовности помещения к монтажу повторный выезд Исполнителя оплачивается отдельно.</p>
+
+<h3>12. ОТВЕТСТВЕННОСТЬ СТОРОН</h3>
+<p>12.1. За нарушение сроков изготовления Исполнитель выплачивает пеню 1% от стоимости работ за каждый день просрочки.</p>
+<p>12.2. За просрочку оплаты Заказчик выплачивает пеню 1% от суммы просрочки за каждый день.</p>
+<p>12.3. В случае отказа Заказчика от договора предоплата не возвращается при начатом производстве.</p>
+
+<h3>13. ПРИЁМКА РАБОТ</h3>
+<p>13.1. Приёмка осуществляется по акту выполненных работ.</p>
+<p>13.2. Замечания фиксируются в момент приёмки.</p>
+
+<h3>14. ТРЕБОВАНИЯ К ПОДГОТОВКЕ ПОМЕЩЕНИЯ</h3>
+<p>14.1. Заказчик обеспечивает подготовку помещения (выравнивание стен, пола и потолка «под ноль»).</p>
+<p>14.2. Заказчик подтверждает, что понимает влияние геометрии помещения на внешний вид, зазоры и корректность установки.</p>
+<p>14.3. При неровностях возможны технологические зазоры и визуальные отличия, которые не считаются браком.</p>
+<p>14.4. Исполнитель не несёт ответственности за дефекты установки, вызванные состоянием помещения.</p>
+<p>14.5. Дополнительные работы по адаптации мебели под неровности выполняются по согласованию и оплачиваются отдельно.</p>
+
+<h3>15. СКРЫТЫЕ КОММУНИКАЦИИ</h3>
+<p>15.1. Заказчик обязан уведомить Исполнителя о расположении скрытых коммуникаций (электропроводка, трубы, системы отопления, вентиляция).</p>
+<p>15.2. За достоверность предоставленной информации отвечает Заказчик.</p>
+<p>15.3. Исполнитель не несёт ответственности за повреждения скрытых коммуникаций при недостоверной информации.</p>
+<p>15.4. Перенос или доработка коммуникаций выполняются Заказчиком самостоятельно и за свой счёт.</p>
+
+<h3>17. ФОРС-МАЖОР</h3>
+<p>Стороны освобождаются от ответственности при обстоятельствах непреодолимой силы (стихийные бедствия, пожар, пандемия и т.п.).</p>
+
+<h3>18. РАЗРЕШЕНИЕ СПОРОВ</h3>
+<p>Споры решаются путём переговоров, при недостижении соглашения — в суде Республики Казахстан.</p>
+
+<h3>19. РЕКВИЗИТЫ ИСПОЛНИТЕЛЯ</h3>
+<div class="static">
+<b>ИП «ARTHOUSE_MOBILYA»</b><br>
+Руководитель: Ерболат қызы Бибігүл<br>
+ИИН: 870621401922<br>
+Рег. №: KZ77TWQ05644351<br>
+Адрес: г. Астана, ул. Жошы хан, д. 13, кв./офис 212<br>
+Банк: АО «Kaspi Bank»<br>
+БИК: CASPKZKA<br>
+ИИК: KZ74722S000051524619<br>
+КБе: 19<br>
+Тел.: +7 702 872 2200<br>
+Тел.: +7 701 055 0082<br>
+Email: bibigul.yerbolatkyzy@icloud.com<br>
+Instagram: ARTHOUSE MOBILYA
+</div>
+
+<h3>20. ПОДПИСИ СТОРОН</h3>
+<div class="signature-grid">
+<div class="signature">
+<b>ИСПОЛНИТЕЛЬ</b>
+<p>Ерболат қызы Бибігүл</p>
+<canvas id="sig1"></canvas>
+<small>Подпись исполнителя</small>
+<button class="gray no-print" onclick="clearSig('sig1')">Очистить</button>
+</div>
+<div class="signature">
+<b>ЗАКАЗЧИК</b>
+<p id="clientName"></p>
+<canvas id="sig2"></canvas>
+<small>Подпись заказчика</small>
+<button class="gray no-print" onclick="clearSig('sig2')">Очистить</button>
+</div>
+</div>
+
+<h3>ПРИЛОЖЕНИЕ №1. СПЕЦИФИКАЦИЯ МЕБЕЛИ</h3>
+<p>Эскизы, чертежи, размеры, материалы, цвет и комплектация изделия:</p>
+<textarea data-save="specification" placeholder="Укажите описание мебели, размеры, материалы, цвет, фурнитуру и другие характеристики..."></textarea>
+<div class="field">Стоимость по спецификации: <input data-save="specPrice" placeholder="Тенге"></div>
+
+<p style="text-align:center;margin-top:20px">Подписи сторон подтверждают согласие с условиями договора и Приложением №1.</p>
+
+</div>
+
+<div class="actions">
+<button onclick="save()">Сохранить данные</button>
+<button onclick="window.print()">Скачать / сохранить PDF</button>
+<button class="red" onclick="resetAll()">Очистить договор</button>
+</div>
+
+<script>
+const fields=document.querySelectorAll('[data-save]');
+
+function updateNames(){
+ document.getElementById('clientName').textContent=
+ document.querySelector('[data-save="client"]').value;
+}
+
+function save(){
+ const data={};
+ fields.forEach(x=>data[x.dataset.save]=x.value);
+ data.sig1=document.getElementById('sig1').toDataURL();
+ data.sig2=document.getElementById('sig2').toDataURL();
+ try{
+  localStorage.setItem('arthouse_furniture_contract',JSON.stringify(data));
+  alert('Договор сохранён в этом браузере.');
+ }catch(e){
+  alert('Не удалось сохранить данные.');
+ }
+}
+
+function restoreSignature(id,src){
+ const img=new Image();
+ img.onload=()=>{
+  const c=document.getElementById(id);
+  const ctx=c.getContext('2d');
+  ctx.drawImage(img,0,0,c.width,c.height);
+ };
+ img.src=src;
+}
+
+function load(){
+ try{
+  const data=JSON.parse(localStorage.getItem('arthouse_furniture_contract')||'{}');
+  fields.forEach(x=>{
+   if(data[x.dataset.save]!==undefined)x.value=data[x.dataset.save];
+  });
+  ['sig1','sig2'].forEach(id=>{
+   if(data[id])restoreSignature(id,data[id]);
+  });
+ }catch(e){}
+ updateNames();
+}
+
+function setupCanvas(id){
+ const c=document.getElementById(id);
+ const ctx=c.getContext('2d');
+ let drawing=false;
+ let last=null;
+
+ function resize(){
+  const old=c.toDataURL();
+  const w=c.clientWidth;
+  c.width=w*2;
+  c.height=220;
+  ctx.setTransform(2,0,0,2,0,0);
+  if(old!=='data:,')restoreSignature(id,old);
+  ctx.strokeStyle='#111';
+  ctx.lineWidth=2;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+ }
+ resize();
+ window.addEventListener('resize',resize);
+
+ function point(e){
+  const r=c.getBoundingClientRect();
+  return {x:e.clientX-r.left,y:e.clientY-r.top};
+ }
+
+ c.addEventListener('pointerdown',e=>{
+  drawing=true;
+  c.setPointerCapture(e.pointerId);
+  last=point(e);
+  ctx.beginPath();
+  ctx.moveTo(last.x,last.y);
+ });
+
+ c.addEventListener('pointermove',e=>{
+  if(!drawing)return;
+  const p=point(e);
+  ctx.beginPath();
+  ctx.moveTo(last.x,last.y);
+  ctx.lineTo(p.x,p.y);
+  ctx.stroke();
+  last=p;
+ });
+
+ function stop(){drawing=false;last=null;}
+ c.addEventListener('pointerup',stop);
+ c.addEventListener('pointercancel',stop);
+}
+
+function clearSig(id){
+ const c=document.getElementById(id);
+ c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+
+function resetAll(){
+ if(confirm('Удалить все заполненные данные и подписи?')){
+  localStorage.removeItem('arthouse_furniture_contract');
+  location.reload();
+ }
+}
+
+fields.forEach(x=>x.addEventListener('input',updateNames));
+setupCanvas('sig1');
+setupCanvas('sig2');
+load();
+window.addEventListener('beforeprint',save);
+</script>
+</body>
+</html>
