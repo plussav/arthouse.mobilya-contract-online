@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -144,6 +145,13 @@ small{
     white-space:normal;
 }
 
+.total-words{
+    display:inline;
+    font-size:12px;
+    font-weight:bold;
+    color:#333;
+}
+
 .payment-details{
     font-size:13px;
     font-weight:bold;
@@ -164,6 +172,10 @@ input[readonly]{
 
     .grid,.signature-grid{
         grid-template-columns:1fr;
+    }
+
+    .total-field{
+        flex-wrap:wrap;
     }
 }
 
@@ -259,13 +271,12 @@ input[readonly]{
 
 <h3>5. СТОИМОСТЬ И ОПЛАТА</h3>
 
-<div class="field">
+<div class="field total-field">
 5.1. Общая стоимость работ:
 <input data-save="total" type="number" min="0" step="1" placeholder="Сумма в тенге">
 <span>₸</span>
+<span id="totalWords" class="total-words"></span>
 </div>
-
-<p id="totalWords" class="money-words"></p>
 
 <p>5.2. Стоимость, указанная в договоре, действительна на момент согласования проекта, составления договора и внесения предоплаты. В случае изменения цен на материалы, фурнитуру, курсов валют или иных объективных факторов до фактического поступления предоплаты Исполнитель вправе корректировать стоимость. Любые изменения согласовываются с Заказчиком письменно до начала производства.</p>
 
@@ -276,21 +287,21 @@ input[readonly]{
 <div class="field">
 5.3.1. Предоплата:
 <input data-save="prepayment" type="number" min="0" max="100" step="0.01" placeholder="30">
-%
+<span>%</span>
 </div>
 
 <div class="field">
 5.3.2. Остаток:
 <input data-save="balance" type="number" readonly>
-%
+<span>%</span>
 </div>
 
 </div>
 
 <div id="paymentDetails" class="payment-details">
-Предоплата: 0 ₸
+Предоплата (0%): 0 ₸
 <br>
-Остаток: 0 ₸
+Остаток (100%): 0 ₸
 </div>
 
 <p>Остаток оплачивается не позднее чем за 2 (два) рабочих дня до даты доставки.</p>
