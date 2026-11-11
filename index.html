@@ -22,25 +22,21 @@ input:focus,textarea:focus{outline:1px solid #888}
 .signature{border:1px solid #aaa;padding:10px;border-radius:4px}
 canvas{width:100%;height:110px;display:block;touch-action:none;background:white;border-bottom:1px solid #aaa}
 button{border:0;padding:11px 18px;background:#222;color:white;border-radius:5px;cursor:pointer}
-button.gray{background:#666}
-button.red{background:#a33}
+button.gray{background:#666}button.red{background:#a33}
 .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px}
 small{font-size:10px;color:#777}
 .static{font-size:12px;line-height:1.5}
-.money-words{font-size:12px;font-weight:bold;color:#333;white-space:normal}
 .total-words{display:inline;font-size:12px;font-weight:bold;color:#333}
 .payment-details{font-size:13px;font-weight:bold;line-height:1.9;margin-top:10px}
 input[readonly]{background:#eee;color:#555}
 .specification{margin-top:28px;page-break-before:always}
 .specification h2{font-size:16px;letter-spacing:.3px;margin:8px 0}
-.spec-meta{text-align:center;font-size:12px;margin-bottom:14px}
 .spec-table-wrap{width:100%;overflow-x:auto}
 .spec-table{width:100%;border-collapse:collapse;font-size:9px;line-height:1.25;table-layout:fixed}
 .spec-table th,.spec-table td{border:1px solid #777;padding:5px 4px;vertical-align:middle;overflow-wrap:anywhere}
 .spec-table th{background:#eee;text-align:center;font-weight:bold}
 .spec-table td.num,.spec-table td.qty,.spec-table td.price,.spec-table td.sum{text-align:center}
 .spec-table .item-name{font-weight:bold}
-.spec-table tfoot td{font-weight:bold;background:#f5f5f5}
 .spec-note{font-size:10px;color:#444;margin:8px 0}
 .spec-totals{width:100%;max-width:390px;margin:14px 0 0 auto;border-collapse:collapse;font-size:11px}
 .spec-totals td{padding:5px 7px;border-bottom:1px solid #ccc}
@@ -48,10 +44,10 @@ input[readonly]{background:#eee;color:#555}
 .spec-approval{margin-top:18px;font-size:11px}
 .addendum{page-break-before:always;margin-top:28px;font-size:12px;line-height:1.5}
 .addendum h2{text-align:center;font-size:16px;margin:8px 0 18px}
+.addendum h3{border-bottom:none;margin-top:16px;font-size:13px;text-transform:uppercase}
 .addendum p{font-size:12px;line-height:1.55;margin:8px 0}
-.addendum .sum-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
-.addendum .sum-table td{border:1px solid #888;padding:7px}
-.addendum .sum-table td:last-child{text-align:right;font-weight:bold;white-space:nowrap}
+.addendum ul{margin:8px 0;padding-left:20px;font-size:12px}
+.addendum li{margin-bottom:6px}
 .addendum .sign-line{margin-top:24px}
 .addendum .sign-line input{width:100%;max-width:280px}
 .addendum canvas{height:85px;border:1px solid #aaa;margin-top:8px}
@@ -79,483 +75,137 @@ h3{break-after:avoid}
 .spec-totals{break-inside:avoid}
 }
 </style>
-
 <script>
 (() => {
-  const STORAGE_KEY = 'arthouse_contract_v2';
+  const STORAGE_KEY = 'arthouse_contract_v3';
   const canvases = ['sig1','sig2','sig3','sig4'];
   const signatureData = {};
-
-  const fmt = n => new Intl.NumberFormat('ru-RU',{
-    maximumFractionDigits:2
-  }).format(Number(n)||0);
-
+  const fmt = n => new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2}).format(Number(n)||0);
   const numberWords = (value) => {
     const n = Math.round(Number(value)||0);
     if (!n) return 'ноль тенге';
-
-    const units = [
-      ['','один','два','три','четыре','пять','шесть','семь','восемь','девять'],
-      ['','одна','две','три','четыре','пять','шесть','семь','восемь','девять']
-    ];
+    const units = [['','один','два','три','четыре','пять','шесть','семь','восемь','девять'],['','одна','две','три','четыре','пять','шесть','семь','восемь','девять']];
     const tens = ['','десять','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'];
     const teens = ['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
     const hundreds = ['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'];
-
-    function triad(x,feminine=false){
-      let s=[];
-      if(x>=100)s.push(hundreds[Math.floor(x/100)]);
-      x%=100;
-      if(x>=10&&x<20)s.push(teens[x-10]);
-      else{
-        if(x>=20)s.push(tens[Math.floor(x/10)]);
-        x%=10;
-        if(x)s.push(units[feminine?1:0][x]);
-      }
-      return s.join(' ');
-    }
-
-    const groups=[
-      {v:n%1000,f:false,names:['','тысяча','тысячи','тысяч']},
-      {v:Math.floor(n/1000)%1000,f:true,names:['тысяча','тысячи','тысяч','тысяч']},
-      {v:Math.floor(n/1e6)%1000,f:false,names:['миллион','миллиона','миллионов','миллионов']},
-      {v:Math.floor(n/1e9)%1000,f:false,names:['миллиард','миллиарда','миллиардов','миллиардов']}
-    ];
-
+    function triad(x, feminine=false){let s=[]; if(x>=100)s.push(hundreds[Math.floor(x/100)]); x%=100; if(x>=10&&x<20)s.push(teens[x-10]); else {if(x>=20)s.push(tens[Math.floor(x/10)]); x%=10; if(x)s.push(units[feminine?1:0][x]);} return s.join(' ');}
+    const groups=[{v:n%1000,f:false,names:['','тысяча','тысячи','тысяч']},{v:Math.floor(n/1000)%1000,f:true,names:['тысяча','тысячи','тысяч','тысяч']},{v:Math.floor(n/1e6)%1000,f:false,names:['миллион','миллиона','миллионов','миллионов']},{v:Math.floor(n/1e9)%1000,f:false,names:['миллиард','миллиарда','миллиардов','миллиардов']}];
     const parts=[];
-    for(let i=groups.length-1;i>=0;i--){
-      const g=groups[i];
-      if(!g.v)continue;
-      let phrase=triad(g.v,g.f);
-      if(i>0){
-        const last=g.v%10;
-        const last2=g.v%100;
-        const idx=(last2>=11&&last2<=14)?2:(last===1?0:([2,3,4].includes(last)?1:2));
-        phrase+=' '+g.names[idx];
-      }
-      parts.push(phrase);
-    }
+    for(let i=groups.length-1;i>=0;i--){const g=groups[i]; if(!g.v)continue; let phrase=triad(g.v,g.f); if(i>0){const last=g.v%10, last2=g.v%100; const idx=(last2>=11&&last2<=14)?2:(last===1?0:([2,3,4].includes(last)?1:2)); phrase+=' '+g.names[idx];} parts.push(phrase);}
     return parts.join(' ')+' тенге';
   };
-
   function update(){
     const total=Number(document.querySelector('[data-save="total"]')?.value)||0;
     const pct=Number(document.querySelector('[data-save="prepayment"]')?.value)||0;
     const balance=Math.max(0,100-pct);
-
-    const bal=document.querySelector('[data-save="balance"]');
-    if(bal)bal.value=balance;
-
+    const bal=document.querySelector('[data-save="balance"]'); if(bal)bal.value=balance;
     const details=document.getElementById('paymentDetails');
-    if(details){
-      details.innerHTML=
-        `Предоплата (${fmt(pct)}%): ${fmt(total*pct/100)} ₸<br>`+
-        `Остаток (${fmt(balance)}%): ${fmt(total*balance/100)} ₸`;
-    }
-
-    // Дополнительное соглашение: проценты независимы
-    const addendumPct=Number(
-      document.querySelector('[data-save="addendumPrepayment"]')?.value
-    )||0;
-
-    const addendumBalance=Number(
-      document.querySelector('[data-save="addendumBalance"]')?.value
-    )||0;
+    if(details)details.innerHTML=`Предоплата (${fmt(pct)}%): ${fmt(total*pct/100)} ₸<br>Остаток (${fmt(balance)}%): ${fmt(total*balance/100)} ₸`;
 
     const addendumAmount=879165;
+    const addendumPct=Number(document.querySelector('[data-save="addendumPrepayment"]')?.value)||0;
+    const addendumBalEl=document.querySelector('[data-save="addendumBalance"]');
+    const addendumBalance=Math.max(0,100-addendumPct);
+    if(addendumBalEl) addendumBalEl.value=addendumBalance;
     const addendumDetails=document.getElementById('addendumPaymentDetails');
+    if(addendumDetails)addendumDetails.innerHTML=`<b>Предоплата (${fmt(addendumPct)}%): ${fmt(addendumAmount*addendumPct/100)} ₸</b><br><b>Остаток (${fmt(addendumBalance)}%): ${fmt(addendumAmount*addendumBalance/100)} ₸</b>`;
 
-    if(addendumDetails){
-      addendumDetails.innerHTML=
-        `<b>Предоплата (${fmt(addendumPct)}%): ${fmt(addendumAmount*addendumPct/100)} ₸</b><br>`+
-        `<b>Остаток (${fmt(addendumBalance)}%): ${fmt(addendumAmount*addendumBalance/100)} ₸</b>`;
-    }
-
-    const words=document.getElementById('totalWords');
-    if(words)words.textContent=total?`(${numberWords(total)})`:'';
-
+    const words=document.getElementById('totalWords'); if(words)words.textContent=total?`(${numberWords(total)})`:'';
     const client=document.querySelector('[data-save="client"]')?.value||'';
-    const cn=document.getElementById('clientName');
-    if(cn)cn.textContent=client;
-
-    const acn=document.getElementById('addendumClientName');
-    if(acn)acn.textContent=client||'________________________';
+    const cn=document.getElementById('clientName'); if(cn)cn.textContent=client;
+    const acn=document.getElementById('addendumClientName'); if(acn)acn.textContent=client||'________________________';
   }
-
-  function collect(){
-    const data={fields:{},signatures:signatureData};
-    document.querySelectorAll('[data-save]').forEach(el=>{
-      data.fields[el.dataset.save]=el.value;
-    });
-    return data;
+  function collect(){const data={fields:{},signatures:signatureData}; document.querySelectorAll('[data-save]').forEach(el=>data.fields[el.dataset.save]=el.value); return data;}
+  function save(silent=false){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(collect()));if(!silent)alert('Данные договора сохранены в браузере.');}catch(e){if(!silent)alert('Ошибка сохранения.');}}
+  function clearSig(id){const c=document.getElementById(id);if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);delete signatureData[id];save(true);}
+  function setupCanvas(id){const c=document.getElementById(id);if(!c)return;const ctx=c.getContext('2d');let drawing=false,last=null;const resize=()=>{const old=signatureData[id];const r=c.getBoundingClientRect(),dpr=Math.max(1,window.devicePixelRatio||1);c.width=Math.max(1,r.width*dpr);c.height=Math.max(1,r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111';if(old){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0,r.width,r.height);im.src=old;}};resize();
+    const point=e=>{const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+    c.addEventListener('pointerdown',e=>{e.preventDefault();drawing=true;last=point(e);c.setPointerCapture?.(e.pointerId);ctx.beginPath();ctx.moveTo(last.x,last.y);});
+    c.addEventListener('pointermove',e=>{if(!drawing)return;e.preventDefault();const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;});
+    const end=()=>{if(!drawing)return;drawing=false;signatureData[id]=c.toDataURL('image/png');save(true);};
+    c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);c.addEventListener('lostpointercapture',end);
+    window.addEventListener('resize',()=>{const d=signatureData[id];resize();if(d){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0,c.clientWidth,c.clientHeight);im.src=d;}});
   }
-
-  function save(silent=false){
-    try{
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(collect()));
-      if(!silent)alert('Данные договора сохранены в этом браузере.');
-    }catch(e){
-      if(!silent)alert('Не удалось сохранить данные в браузере.');
-    }
-  }
-
-  function clearSig(id){
-    const c=document.getElementById(id);
-    if(!c)return;
-    const ctx=c.getContext('2d');
-    ctx.clearRect(0,0,c.width,c.height);
-    delete signatureData[id];
-    save(true);
-  }
-
-  function setupCanvas(id){
-    const c=document.getElementById(id);
-    if(!c)return;
-
-    const ctx=c.getContext('2d');
-    let drawing=false,last=null;
-
-    const resize=()=>{
-      const old=signatureData[id];
-      const r=c.getBoundingClientRect();
-      const dpr=Math.max(1,window.devicePixelRatio||1);
-
-      c.width=Math.max(1,r.width*dpr);
-      c.height=Math.max(1,r.height*dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      ctx.lineWidth=2;
-      ctx.lineCap='round';
-      ctx.lineJoin='round';
-      ctx.strokeStyle='#111';
-
-      if(old){
-        const im=new Image();
-        im.onload=()=>ctx.drawImage(im,0,0,r.width,r.height);
-        im.src=old;
-      }
-    };
-
-    resize();
-
-    const point=e=>{
-      const r=c.getBoundingClientRect();
-      return{x:e.clientX-r.left,y:e.clientY-r.top};
-    };
-
-    c.addEventListener('pointerdown',e=>{
-      e.preventDefault();
-      drawing=true;
-      last=point(e);
-      c.setPointerCapture?.(e.pointerId);
-      ctx.beginPath();
-      ctx.moveTo(last.x,last.y);
-    });
-
-    c.addEventListener('pointermove',e=>{
-      if(!drawing)return;
-      e.preventDefault();
-      const p=point(e);
-      ctx.lineTo(p.x,p.y);
-      ctx.stroke();
-      last=p;
-    });
-
-    const end=()=>{
-      if(!drawing)return;
-      drawing=false;
-      signatureData[id]=c.toDataURL('image/png');
-      save(true);
-    };
-
-    c.addEventListener('pointerup',end);
-    c.addEventListener('pointercancel',end);
-    c.addEventListener('lostpointercapture',end);
-
-    window.addEventListener('resize',()=>{
-      const d=signatureData[id];
-      resize();
-      if(d){
-        const im=new Image();
-        im.onload=()=>ctx.drawImage(im,0,0,c.clientWidth,c.clientHeight);
-        im.src=d;
-      }
-    });
-  }
-
-  function restore(){
-    try{
-      const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
-
-      Object.entries(data.fields||{}).forEach(([k,v])=>{
-        const el=document.querySelector(`[data-save="${CSS.escape(k)}"]`);
-        if(el)el.value=v;
-      });
-
-      Object.assign(signatureData,data.signatures||{});
-
-      canvases.forEach(id=>{
-        if(signatureData[id]){
-          const c=document.getElementById(id);
-          if(c){
-            const im=new Image();
-            im.onload=()=>c.getContext('2d').drawImage(im,0,0,c.clientWidth,c.clientHeight);
-            im.src=signatureData[id];
-          }
-        }
-      });
-
-      // Однократный сброс старого автоматического значения остатка
-      const migrationKey='arthouse_addendum_manual_balance_v1';
-
-      if(!localStorage.getItem(migrationKey)){
-        const manualBalance=document.querySelector('[data-save="addendumBalance"]');
-        if(manualBalance)manualBalance.value='0';
-
-        localStorage.setItem(migrationKey,'1');
-        save(true);
-      }
-
-    }catch(e){}
-
-    update();
-  }
-
-  function resetAll(){
-    if(!confirm('Очистить все заполненные поля и подписи?'))return;
-
-    document.querySelectorAll('[data-save]').forEach(el=>{
-      el.value='';
-    });
-
-    canvases.forEach(clearSig);
-    localStorage.removeItem(STORAGE_KEY);
-    update();
-  }
-
-  window.save=save;
-  window.clearSig=clearSig;
-  window.resetAll=resetAll;
-
-  document.addEventListener('DOMContentLoaded',()=>{
-    canvases.forEach(setupCanvas);
-    restore();
-
-    document.querySelectorAll('[data-save]').forEach(el=>{
-      el.addEventListener('input',()=>{
-        update();
-        save(true);
-      });
-
-      el.addEventListener('change',()=>{
-        update();
-        save(true);
-      });
-    });
-  });
+  function restore(){try{const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');Object.entries(data.fields||{}).forEach(([k,v])=>{const el=document.querySelector(`[data-save="${CSS.escape(k)}"]`);if(el)el.value=v;});Object.assign(signatureData,data.signatures||{});canvases.forEach(id=>{if(signatureData[id]){const c=document.getElementById(id);if(c){const im=new Image();im.onload=()=>c.getContext('2d').drawImage(im,0,0,c.clientWidth,c.clientHeight);im.src=signatureData[id];}}});}catch(e){} update();}
+  function resetAll(){if(!confirm('Очистить все заполненные поля и подписи?'))return;document.querySelectorAll('[data-save]').forEach(el=>{el.value='';});canvases.forEach(clearSig);localStorage.removeItem(STORAGE_KEY);update();}
+  window.save=save;window.clearSig=clearSig;window.resetAll=resetAll;
+  document.addEventListener('DOMContentLoaded',()=>{canvases.forEach(setupCanvas);restore();document.querySelectorAll('[data-save]').forEach(el=>el.addEventListener('input',()=>{update();save(true);}));document.querySelectorAll('[data-save]').forEach(el=>el.addEventListener('change',()=>{update();save(true);}));});
 })();
 </script>
 </head>
-
 <body>
 <div class="page">
 <h1>ARTHOUSE MOBILYA</h1>
-<h2>ДОГОВОР НА ИЗГОТОВЛЕНИЕ МЕБЕЛИ НА ЗАКАЗ № <input data-save="number" placeholder="001" style="width:65px"></h2>
-
+<h2>ДОГОВОР НА ИЗГОТОВЛЕНИЕ МЕБЕЛИ НА ЗАКАЗ № <input data-save="number" placeholder="26053" value="26053" style="width:65px"></h2>
 <div class="grid">
 <div class="field">Город: <input value="Астана" data-save="city"></div>
-<div class="field">Дата: <input type="date" data-save="date"></div>
+<div class="field">Дата: <input type="date" value="2026-11-10" data-save="date"></div>
 </div>
-
 <h3>1. СТОРОНЫ ДОГОВОРА</h3>
 <p><b>Исполнитель:</b> ИП «ARTHOUSE_MOBILYA»</p>
 <p>Руководитель: Ерболат қызы Бибігүл</p>
-
 <div class="grid">
-<div class="field">Заказчик, ФИО: <input data-save="client"></div>
+<div class="field">Заказчик, ФИО: <input data-save="client" value="Урозалинов Арсен Кайратович"></div>
 <div class="field">ИИН: <input data-save="iin"></div>
 <div class="field">Адрес: <input data-save="address"></div>
 <div class="field">Телефон: <input data-save="phone"></div>
 </div>
-
 <h3>2. ПРЕДМЕТ ДОГОВОРА</h3>
 <p>2.1. Исполнитель обязуется изготовить мебель на заказ по индивидуальному проекту Заказчика, а Заказчик обязуется принять и оплатить результат работ.</p>
 <p>2.2. Характеристики мебели (эскизы, чертежи, спецификация) указаны в Приложении №1.</p>
 <p>2.3. Приложение №1 является неотъемлемой частью настоящего договора.</p>
-
 <h3>3. СОГЛАСОВАНИЕ ПРОЕКТА</h3>
 <p>3.1. Перед запуском в производство согласовываются все размеры, материалы и цвет изделия.</p>
 <p>3.2. Окончательные размеры утверждаются после проведения контрольного замера помещения.</p>
-<p>3.3. Контрольный замер производится только после полной готовности помещения Заказчика, включая завершённые черновые и чистовые работы, влияющие на размеры (полы, стены, потолки, плитка и др.).</p>
-<p>3.4. Заказчик обязуется уведомить Исполнителя о готовности помещения к замеру не менее чем за 1 (один) день.</p>
-<p>3.5. Если помещение не готово к замеру в согласованные сроки или Заказчик переносит дату замера, срок изготовления мебели автоматически сдвигается на период такой задержки без применения штрафных санкций к Исполнителю.</p>
-<p>3.6. Срок изготовления мебели начинает исчисляться с момента наступления позднего из следующих событий:</p>
-<p>3.6.1. Проведения контрольного замера;</p>
-<p>3.6.2. Окончательного утверждения проекта;</p>
-<p>3.6.3. Получения предоплаты (если она не была внесена ранее).</p>
-<p>3.7. Исполнитель не несёт ответственности за несоблюдение сроков изготовления, если задержка вызвана неподготовленностью помещения или переносами замера по инициативе Заказчика.</p>
-
 <h3>4. СРОКИ ИСПОЛНЕНИЯ</h3>
-<div class="field">4.1. Срок изготовления: <input data-save="days" type="number" style="max-width:100px"> календарных дней с момента наступления события, указанного в пункте 3.6.</div>
-
+<div class="field">4.1. Срок изготовления: <input data-save="days" type="number" style="max-width:100px"> календарных дней.</div>
 <h3>5. СТОИМОСТЬ И ОПЛАТА</h3>
-<div class="field total-field">
-5.1. Общая стоимость работ:
-<input data-save="total" type="number" min="0" step="0.01" placeholder="Сумма в тенге">
-<span>₸</span>
-<span id="totalWords" class="total-words"></span>
-</div>
-
-<p>5.2. Стоимость, указанная в договоре, действительна на момент согласования проекта, составления договора и внесения предоплаты. В случае изменения цен на материалы, фурнитуру, курсов валют или иных объективных факторов до фактического поступления предоплаты Исполнитель вправе корректировать стоимость. Любые изменения согласовываются с Заказчиком письменно до начала производства.</p>
-<p>5.3. Порядок оплаты:</p>
-
+<div class="field total-field">5.1. Общая стоимость работ: <input data-save="total" type="number" min="0" step="0.01" value="3048110.46" placeholder="Сумма в тенге"><span>₸</span><span id="totalWords" class="total-words"></span></div>
 <div class="grid">
-<div class="field">5.3.1. Предоплата: <input data-save="prepayment" type="number" min="0" max="100" step="0.01" placeholder="30"><span>%</span></div>
-<div class="field">5.3.2. Остаток: <input data-save="balance" type="number" readonly><span>%</span></div>
+<div class="field">5.3.1. Предоплата: <input data-save="prepayment" type="number" min="0" max="100" step="0.01" value="70"><span>%</span></div>
+<div class="field">5.3.2. Остаток: <input data-save="balance" type="number" readonly value="30"><span>%</span></div>
 </div>
-
-<div id="paymentDetails" class="payment-details">Предоплата (0%): 0 ₸<br>Остаток (100%): 0 ₸</div>
+<div id="paymentDetails" class="payment-details"></div>
 <p>Остаток оплачивается не позднее чем за 2 (два) рабочих дня до даты доставки.</p>
-
-<h3>6. ТЕХНОЛОГИЧЕСКИЕ ДОПУСКИ</h3>
-<p>6.1. Допускаются технологические зазоры в пределах 2–3 мм.</p>
-<p>6.2. Незначительные отличия оттенков материалов (крашеных фасадов) считаются нормой и не являются браком.</p>
-
-<h3>7. КОМПЛЕКТАЦИЯ И ДОПОЛНИТЕЛЬНЫЕ ЭЛЕМЕНТЫ</h3>
-<p>7.1. Бытовая техника и сантехнические подключения в стоимость не входят.</p>
-<p>7.2. Рекомендуется выполнение работ по подключению квалифицированными специалистами.</p>
-
-<h3>8. ДОПОЛНИТЕЛЬНЫЕ РАБОТЫ</h3>
-<p>8.1. Работы и материалы, не указанные в Приложении №1, оплачиваются отдельно.</p>
-
-<h3>9. ИЗМЕНЕНИЕ ПРОЕКТА</h3>
-<p>9.1. В случае изменения размеров, конструкции или материалов стоимость и сроки могут быть скорректированы.</p>
-<p>9.2. Все изменения фиксируются письменно.</p>
-
-<h3>10. ГАРАНТИЯ</h3>
-<p>10.1. Гарантия на изделие составляет 18 месяцев.</p>
-<p>10.2. Гарантия распространяется на конструкцию и фурнитуру.</p>
-<p>10.3. Гарантия не распространяется на:</p>
-<p>10.3.1. Механические повреждения;</p>
-<p>10.3.2. Неправильную эксплуатацию;</p>
-<p>10.3.3. Воздействие влаги.</p>
-
-<h3>11. ДОСТАВКА И УСТАНОВКА</h3>
-<p>11.1. Доставка и установка мебели включены в стоимость.</p>
-<p>11.2. Заказчик обязуется обеспечить готовность помещения для установки (завершение ремонтных работ, доступ к объекту, наличие электричества и свободного пространства).</p>
-<p>11.3. В случае неготовности помещения к монтажу повторный выезд Исполнителя оплачивается отдельно.</p>
-
-<h3>12. ОТВЕТСТВЕННОСТЬ СТОРОН</h3>
-<p>12.1. За нарушение сроков изготовления Исполнитель выплачивает пеню 1% от стоимости работ за каждый день просрочки.</p>
-<p>12.2. За просрочку оплаты Заказчик выплачивает пеню 1% от суммы просрочки за каждый день.</p>
-<p>12.3. В случае отказа Заказчика от договора предоплата не возвращается при начатом производстве.</p>
-
-<h3>13. ПРИЁМКА РАБОТ</h3>
-<p>13.1. Приёмка осуществляется по акту выполненных работ.</p>
-<p>13.2. Замечания фиксируются в момент приёмки.</p>
-
-<h3>14. ТРЕБОВАНИЯ К ПОДГОТОВКЕ ПОМЕЩЕНИЯ</h3>
-<p>14.1. Заказчик обеспечивает подготовку помещения (выравнивание стен, пола и потолка «под ноль»).</p>
-<p>14.2. Заказчик подтверждает, что понимает влияние геометрии помещения на внешний вид, зазоры и корректность установки.</p>
-<p>14.3. При неровностях возможны технологические зазоры и визуальные отличия, которые не считаются браком.</p>
-<p>14.4. Исполнитель не несёт ответственности за дефекты установки, вызванные состоянием помещения.</p>
-<p>14.5. Дополнительные работы по адаптации мебели под неровности выполняются по согласованию и оплачиваются отдельно.</p>
-
-<h3>15. СКРЫТЫЕ КОММУНИКАЦИИ</h3>
-<p>15.1. Заказчик обязан уведомить Исполнителя о расположении скрытых коммуникаций (электропроводка, трубы, системы отопления, вентиляции).</p>
-<p>15.2. За достоверность предоставленной информации отвечает Заказчик.</p>
-<p>15.3. Исполнитель не несёт ответственности за повреждения скрытых коммуникаций при недостоверной информации.</p>
-<p>15.4. Перенос или доработка коммуникаций выполняются Заказчиком самостоятельно и за свой счёт.</p>
-
-<h3>17. ФОРС-МАЖОР</h3>
-<p>Стороны освобождаются от ответственности при обстоятельствах непреодолимой силы (стихийные бедствия, пожар, пандемия и т.п.).</p>
-
-<h3>18. РАЗРЕШЕНИЕ СПОРОВ</h3>
-<p>Споры решаются путём переговоров, при недостижении соглашения — в суде Республики Казахстан.</p>
-
-<h3>19. РЕКВИЗИТЫ ИСПОЛНИТЕЛЯ</h3>
-<div class="static">
-<b>ИП «ARTHOUSE_MOBILYA»</b><br>
-Руководитель: Ерболат қызы Бибігүл<br>
-ИИН: 870621401922<br>
-Рег. №: KZ77TWQ05644351<br>
-Адрес: г. Астана, ул. Жошы хан, д. 13, кв./офис 212<br>
-Банк: АО «Kaspi Bank»<br>
-БИК: CASPKZKA<br>
-ИИК: KZ74722S000051524619<br>
-КБе: 19<br>
-Тел.: +7 702 872 2200<br>
-Тел.: +7 701 055 0082<br>
-Email: bibigul.yerbolatkyzy@icloud.com<br>
-Instagram: ARTHOUSE MOBILYA
-</div>
-
+<h3>19. РЕКВИЗИТЫ ИСПОЛНИТЕЛЬ</h3>
+<div class="static"><b>ИП «ARTHOUSE_MOBILYA»</b><br>Руководитель: Ерболат қызы Бибігүл<br>ИИН: 870621401922<br>Адрес: г. Астана, ул. Жошы хан, д. 13, кв./офис 212<br>Тел.: +7 702 872 2200</div>
 <h3>20. ПОДПИСИ СТОРОН</h3>
 <div class="signature-grid">
-<div class="signature">
-<b>ИСПОЛНИТЕЛЬ</b>
-<p>Ерболат қызы Бибігүл</p>
-<canvas id="sig1"></canvas>
-<small>Подпись исполнителя</small>
-<button class="gray no-print" onclick="clearSig('sig1')">Очистить</button>
-</div>
-<div class="signature">
-<b>ЗАКАЗЧИК</b>
-<p id="clientName"></p>
-<canvas id="sig2"></canvas>
-<small>Подпись заказчика</small>
-<button class="gray no-print" onclick="clearSig('sig2')">Очистить</button>
-</div>
+<div class="signature"><b>ИСПОЛНИТЕЛЬ</b><p>Ерболат қызы Бибігүл</p><canvas id="sig1"></canvas><small>Подпись исполнителя</small><button class="gray no-print" onclick="clearSig('sig1')">Очистить</button></div>
+<div class="signature"><b>ЗАКАЗЧИК</b><p id="clientName"></p><canvas id="sig2"></canvas><small>Подпись заказчика</small><button class="gray no-print" onclick="clearSig('sig2')">Очистить</button></div>
 </div>
 
 <section class="specification">
-<h2>ПРИЛОЖЕНИЕ №1. СПЕЦИФИКАЦИЯ МЕБЕЛИ</h2>
-<div class="spec-meta">К Договору № 26053 от 10.11.2026</div>
-
+<h2>Приложение №1 к Договору 26053 от 10.11.2026</h2>
 <div class="spec-table-wrap">
 <table class="spec-table">
-<colgroup>
-<col style="width:4%">
-<col style="width:27%">
-<col style="width:12%">
-<col style="width:12%">
-<col style="width:12%">
-<col style="width:9%">
-<col style="width:8%">
-<col style="width:8%">
-<col style="width:8%">
-</colgroup>
-<thead>
-<tr>
-<th>№</th><th>Наименование</th><th>Тип</th><th>Бренд</th><th>Цвет</th><th>Кол-во</th><th>Ед. изм.</th><th>Цена</th><th>Сумма</th>
-</tr>
-</thead>
+<colgroup><col style="width:4%"><col style="width:24%"><col style="width:16%"><col style="width:11%"><col style="width:14%"><col style="width:7%"><col style="width:5%"><col style="width:9%"><col style="width:10%"></colgroup>
+<thead><tr><th>№</th><th>Наименование</th><th>Тип</th><th>Бренд</th><th>Цвет</th><th>Кол-во</th><th>Ед.</th><th>Цена</th><th>Сумма</th></tr></thead>
 <tbody>
-<tr><td class="num">1</td><td class="item-name">Фасад нижний</td><td>МДФ крашеный, категория 4. Тыльная сторона белая</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">2,016</td><td>кв. м</td><td class="price">₸93 000,00</td><td class="sum">₸187 488,00</td></tr>
-<tr><td class="num">2</td><td class="item-name">Фасад верхний</td><td>МДФ крашеный, категория 4. Тыльная сторона белая</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">3,105</td><td>кв. м</td><td class="price">₸93 000,00</td><td class="sum">₸288 765,00</td></tr>
-<tr><td class="num">3</td><td class="item-name">Фасад пенал</td><td>МДФ крашеный, категория 4. Тыльная сторона белая</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">0,81</td><td>кв. м</td><td class="price">₸93 000,00</td><td class="sum">₸75 330,00</td></tr>
-<tr><td class="num">4</td><td class="item-name">Видимые боковины, цоколь, планки, уголки</td><td>МДФ крашеный, модерн. Тыльная сторона белая</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">2,954</td><td>кв. м</td><td class="price">₸73 000,00</td><td class="sum">₸215 642,00</td></tr>
-<tr><td class="num">5</td><td class="item-name">Столешница</td><td>Кварцевый камень</td><td>GRANDEX Quartz</td><td>GQ 543 Fusion Inspiration</td><td class="qty">3,5</td><td>пог. м</td><td class="price">₸209 600,00</td><td class="sum">₸733 600,00</td></tr>
-<tr><td class="num">6</td><td class="item-name">Фартук</td><td>Акриловый камень</td><td>—</td><td>Согласуется</td><td class="qty">4,1</td><td>пог. м</td><td class="price">₸157 500,00</td><td class="sum">₸645 750,00</td></tr>
-<tr><td class="num">7</td><td class="item-name">Корпус нижний</td><td>ЛДСП</td><td>EGGER</td><td>H1242 ST10, Акация Шеффилд натуральный</td><td class="qty">8,3825962</td><td>кв. м</td><td class="price">₸25 000,00</td><td class="sum">₸209 564,91</td></tr>
-<tr><td class="num">8</td><td class="item-name">Корпус верхний</td><td>ЛДСП</td><td>EGGER</td><td>H1242 ST10, Акация Шеффилд натуральный</td><td class="qty">9,471</td><td>кв. м</td><td class="price">₸25 000,00</td><td class="sum">₸236 775,00</td></tr>
-<tr><td class="num">9</td><td class="item-name">Корпус пенал</td><td>ЛДСП</td><td>EGGER</td><td>H1242 ST10, Акация Шеффилд натуральный</td><td class="qty">11,682</td><td>кв. м</td><td class="price">₸25 000,00</td><td class="sum">₸292 050,00</td></tr>
-<tr><td class="num">10</td><td class="item-name">Задняя стенка</td><td>ХДФ 3 мм</td><td>—</td><td>Белый</td><td class="qty">6,4449</td><td>кв. м</td><td class="price">₸5 000,00</td><td class="sum">₸32 224,50</td></tr>
-<tr><td class="num">11</td><td class="item-name">Выдвижной механизм MERIVOBOX L500, высота E с релингом</td><td>Фурнитура</td><td>BLUM</td><td>Орион серый</td><td class="qty">2</td><td>компл.</td><td class="price">₸35 750,00</td><td class="sum">₸71 500,00</td></tr>
-<tr><td class="num">12</td><td class="item-name">Выдвижной механизм MERIVOBOX L500, высота K</td><td>Фурнитура</td><td>BLUM</td><td>Орион серый</td><td class="qty">2</td><td>компл.</td><td class="price">₸33 020,00</td><td class="sum">₸66 040,00</td></tr>
-<tr><td class="num">13</td><td class="item-name">Выдвижной механизм MERIVOBOX L500, высота M</td><td>Фурнитура</td><td>BLUM</td><td>Орион серый</td><td class="qty">2</td><td>компл.</td><td class="price">₸53 560,00</td><td class="sum">₸107 120,00</td></tr>
-<tr><td class="num">14</td><td class="item-name">Внутренний</td><td>Фурнитура</td><td>BLUM</td><td>—</td><td class="qty">27</td><td>шт.</td><td class="price">₸2 580,00</td><td class="sum">₸69 660,00</td></tr>
-<tr><td class="num">15</td><td class="item-name">Петли Blumotion</td><td>Фурнитура</td><td>BLUM</td><td>—</td><td class="qty">2</td><td>шт.</td><td class="price">₸2 840,00</td><td class="sum">₸5 680,00</td></tr>
-<tr><td class="num">16</td><td class="item-name">Толкатель Tip-ON</td><td>Фурнитура</td><td>BLUM</td><td>—</td><td class="qty">2</td><td>шт.</td><td class="price">₸8 500,00</td><td class="sum">₸17 000,00</td></tr>
-<tr><td class="num">17</td><td class="item-name">Лоток</td><td>База 600 мм</td><td>—</td><td>—</td><td class="qty">1</td><td>шт.</td><td class="price">₸18 800,00</td><td class="sum">₸18 800,00</td></tr>
-<tr><td class="num">18</td><td class="item-name">Гигиенический поддон</td><td>База 600 мм</td><td>—</td><td>Чёрный</td><td class="qty">1</td><td>шт.</td><td class="price">₸5 800,00</td><td class="sum">₸5 800,00</td></tr>
-<tr><td class="num">19</td><td class="item-name">Сушилка в нижнюю базу</td><td>База 1200 мм</td><td>GTV</td><td>Орион серый</td><td class="qty">1</td><td>шт.</td><td class="price">₸48 000,00</td><td class="sum">₸48 000,00</td></tr>
-<tr><td class="num">20</td><td class="item-name">Комплект защитных накладок для корпуса под духовой шкаф; профиль врезной в витражный шкаф</td><td>Комплект; блок питания и светодиодная лента приобретаются заказчиком отдельно</td><td>—</td><td>—</td><td class="qty">6</td><td>пог. м</td><td class="price">₸10 000,00</td><td class="sum">₸60 000,00</td></tr>
+<tr><td class="num">1</td><td class="item-name">Фасад Нижний</td><td>МДФ Крашенный. Категория 4. Тыльная сторона белая.</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">2,016</td><td>кв.м</td><td class="price">₸93 000,00</td><td class="sum">₸187 488,00</td></tr>
+<tr><td class="num">2</td><td class="item-name">Фасад Верхний</td><td>МДФ Крашенный. Категория 4. Тыльная сторона белая.</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">3,105</td><td>кв.м</td><td class="price">₸93 000,00</td><td class="sum">₸288 765,00</td></tr>
+<tr><td class="num">3</td><td class="item-name">Фасад Пенал</td><td>МДФ Крашенный. Категория 4. Тыльная сторона белая.</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">0,810</td><td>кв.м</td><td class="price">₸93 000,00</td><td class="sum">₸75 330,00</td></tr>
+<tr><td class="num">4</td><td class="item-name">Видимые Боковины, Цоколь, Планки, Уголки</td><td>МДФ Крашенный. Модерн. Тыльная сторона белая.</td><td>GAMMA COATING</td><td>VM 01.07</td><td class="qty">2,954</td><td>кв.м</td><td class="price">₸73 000,00</td><td class="sum">₸215 642,00</td></tr>
+<tr><td class="num">5</td><td class="item-name">Столешница</td><td>Кварцевый Камень</td><td>GRANDEX Quartz</td><td>GQ 543 Fusion Inspiration</td><td class="qty">3,500</td><td>пог.м</td><td class="price">₸209 600,00</td><td class="sum">₸733 600,00</td></tr>
+<tr><td class="num">6</td><td class="item-name">Фартук</td><td>Кварцевый Камень</td><td>GRANDEX Quartz</td><td>GQ 543 Fusion Inspiration</td><td class="qty">4,100</td><td>пог.м</td><td class="price">₸157 500,00</td><td class="sum">₸645 750,00</td></tr>
+<tr><td class="num">7</td><td class="item-name">Корпус Нижний</td><td>ЛДСП</td><td>EGGER</td><td>H1242 ST10 Акация Шеффилд натуральный</td><td class="qty">8,383</td><td>кв.м</td><td class="price">₸25 000,00</td><td class="sum">₸209 564,91</td></tr>
+<tr><td class="num">8</td><td class="item-name">Корпус Верхний</td><td>ЛДСП</td><td>EGGER</td><td>H1242 ST10 Акация Шеффилд натуральный</td><td class="qty">9,471</td><td>кв.м</td><td class="price">₸25 000,00</td><td class="sum">₸236 775,00</td></tr>
+<tr><td class="num">9</td><td class="item-name">Корпус Пенал</td><td>ЛДСП</td><td>EGGER</td><td>H1242 ST10 Акация Шеффилд натуральный</td><td class="qty">11,682</td><td>кв.м</td><td class="price">₸25 000,00</td><td class="sum">₸292 050,00</td></tr>
+<tr><td class="num">10</td><td class="item-name">Задняя Стенка</td><td>ХДФ 3мм</td><td>—</td><td>Белый</td><td class="qty">6,445</td><td>кв.м</td><td class="price">₸5 000,00</td><td class="sum">₸32 224,50</td></tr>
+<tr><td class="num">11</td><td class="item-name">Выдвижной механизм</td><td>MERIVOBOX L500 высота Е с релингом</td><td>BLUM</td><td>Орион Серый</td><td class="qty">2,000</td><td>компл.</td><td class="price">₸35 750,00</td><td class="sum">₸71 500,00</td></tr>
+<tr><td class="num">12</td><td class="item-name">Выдвижной механизм</td><td>MERIVOBOX L500 высота К</td><td>BLUM</td><td>Орион Серый</td><td class="qty">2,000</td><td>компл.</td><td class="price">₸33 020,00</td><td class="sum">₸66 040,00</td></tr>
+<tr><td class="num">13</td><td class="item-name">Выдвижной механизм</td><td>MERIVOBOX L500 высота М Внутренний</td><td>BLUM</td><td>Орион Серый</td><td class="qty">2,000</td><td>компл.</td><td class="price">₸53 560,00</td><td class="sum">₸107 120,00</td></tr>
+<tr><td class="num">14</td><td class="item-name">Петли</td><td>Blumotion</td><td>BLUM</td><td>—</td><td class="qty">27,000</td><td>шт</td><td class="price">₸2 580,00</td><td class="sum">₸69 660,00</td></tr>
+<tr><td class="num">15</td><td class="item-name">Толкатель</td><td>Tip-ON</td><td>BLUM</td><td>Орион Серый</td><td class="qty">2,000</td><td>шт</td><td class="price">₸2 840,00</td><td class="sum">₸5 680,00</td></tr>
+<tr><td class="num">16</td><td class="item-name">Поток База 600мм</td><td>База 600мм</td><td>—</td><td>Орион Серый</td><td class="qty">2,000</td><td>шт</td><td class="price">₸8 500,00</td><td class="sum">₸17 000,00</td></tr>
+<tr><td class="num">17</td><td class="item-name">Гигиенический поддон</td><td>База 1200мм</td><td>—</td><td>—</td><td class="qty">1,000</td><td>шт</td><td class="price">₸18 800,00</td><td class="sum">₸18 800,00</td></tr>
+<tr><td class="num">18</td><td class="item-name">Комплект защитных накладок</td><td>Для корпуса под духовой шкаф</td><td>—</td><td>Черный</td><td class="qty">1,000</td><td>шт</td><td class="price">₸5 800,00</td><td class="sum">₸5 800,00</td></tr>
+<tr><td class="num">19</td><td class="item-name">Сушилка в нижнюю базу</td><td>База 700мм</td><td>GTV</td><td>Орион Серый</td><td class="qty">1,000</td><td>шт</td><td class="price">₸48 000,00</td><td class="sum">₸48 000,00</td></tr>
+<tr><td class="num">20</td><td class="item-name">Профиль врезной</td><td>Витражный Шкаф</td><td>—</td><td>—</td><td class="qty">6,000</td><td>пог.м</td><td class="price">₸10 000,00</td><td class="sum">₸60 000,00</td></tr>
 </tbody>
 </table>
 </div>
-
-<p class="spec-note">Примечание: блок питания и светодиодная лента для витражного шкафа приобретаются Заказчиком отдельно.</p>
-
+<p class="spec-note">Примечание: блок питания и светодиодная лента приобретаются заказчиком отдельно.</p>
 <table class="spec-totals">
 <tr><td>ИТОГО</td><td>₸3 386 789,41</td></tr>
 <tr><td>Скидка 10%</td><td>₸338 678,94</td></tr>
@@ -563,85 +213,51 @@ Instagram: ARTHOUSE MOBILYA
 <tr><td>Предоплата 70%</td><td>₸2 133 677,33</td></tr>
 <tr><td>Остаток 30%</td><td>₸914 433,14</td></tr>
 </table>
-
-<div class="spec-approval">
-<p>Подписи сторон подтверждают согласие с условиями договора и настоящей спецификацией.</p>
-<div class="signature-grid">
-<div><b>ИСПОЛНИТЕЛЬ:</b><p>Ерболат қызы Бибігүл</p><p>Подпись: _______________________</p></div>
-<div><b>ЗАКАЗЧИК:</b><p>ФИО: __________________________</p><p>Подпись: _______________________</p></div>
-</div>
-</div>
 </section>
 
 <section class="addendum">
 <h2>ДОПОЛНИТЕЛЬНОЕ СОГЛАШЕНИЕ № <input data-save="addendumNumber" placeholder="___" style="width:65px"></h2>
-<p style="text-align:center">к Договору № 26053 от «10» ноября 2026 г.</p>
-<p style="text-align:center">г. Астана «<input data-save="addendumDay" placeholder="___" style="width:38px">» <input data-save="addendumMonth" placeholder="__________" style="width:125px"> 2026 г.</p>
+<p style="text-align:center">к Договору № <input data-save="addendumRefNumber" placeholder="26053" value="26053" style="width:65px"> от «<input data-save="addendumRefDay" placeholder="10" value="10" style="width:35px">» <input data-save="addendumRefMonth" placeholder="ноября" value="ноября" style="width:90px"> 2026 г.</p>
+<p style="text-align:center">г. Астана &nbsp;&nbsp;&nbsp; «<input data-save="addendumDay" placeholder="___" style="width:38px">» <input data-save="addendumMonth" placeholder="__________" style="width:125px"> 2026 г.</p>
 
-<p>ИП «ARTHOUSE_MOBILYA», в лице руководителя Ерболат қызы Бибігүл, именуемое в дальнейшем «Исполнитель», с одной стороны, и Заказчик, указанный в основном Договоре, с другой стороны, совместно именуемые «Стороны», заключили настоящее Дополнительное соглашение о нижеследующем:</p>
+<p><b>Заказчик:</b> <span id="addendumClientName">________________________</span></p>
+<p><b>Исполнитель:</b> ИП ARTHOUSE MOBILYA</p>
+<p style="margin-top:12px">Стороны договорились внести следующие изменения в ранее заключённый Договор:</p>
 
-<p><b>1. Изменение комплектации</b></p>
-<p>1.1. Стороны договорились заменить предусмотренную ранее столешницу из акрилового камня на столешницу из кварцевого камня.</p>
-<p>1.2. Дополнительно в комплектацию включается кухонный фартук из акрилового камня.</p>
-<p>1.3. Обновлённая Спецификация, содержащая актуальные материалы, комплектацию и стоимость, является неотъемлемой частью настоящего Дополнительного соглашения.</p>
-<p>1.4. В части, изменённой настоящим Дополнительным соглашением, обновлённая Спецификация заменяет соответствующие ранее согласованные позиции. Остальные позиции и условия основного Договора остаются без изменений.</p>
+<h3>1. ИЗМЕНЕНИЕ КОМПЛЕКТАЦИИ ЗАКАЗА</h3>
+<p>1.1. По согласованию сторон первоначально предусмотренная договором кухонная столешница из акрилового камня заменяется на столешницу из кварцевого камня.</p>
+<p>1.2. Дополнительно в комплектацию заказа включается кухонный фартук из кварцевого камня.</p>
+<p>1.3. Новые материалы, их цвет, характеристики и комплектация указываются в обновлённой спецификации, которая является неотъемлемой частью настоящего дополнительного соглашения.</p>
+<p>1.4. В части столешницы новая спецификация заменяет ранее согласованную позицию. Остальные условия и позиции первоначального договора остаются без изменений.</p>
 
-<p><b>2. Изменение стоимости</b></p>
-<table class="sum-table">
-<tr><td>Первоначальная стоимость по Договору</td><td>2 168 945 ₸</td></tr>
-<tr><td>Новая общая стоимость</td><td>3 048 110 ₸</td></tr>
-<tr><td><b>Дополнительная сумма к оплате</b></td><td><b>879 165 ₸</b></td></tr>
-</table>
+<h3>2. ИЗМЕНЕНИЕ СТОИМОСТИ ЗАКАЗА</h3>
+<p>В связи с изменением комплектации стороны согласовали следующую стоимость:</p>
+<ul>
+<li>Первоначальная стоимость заказа: <b>2 168 945 (два миллиона сто шестьдесят восемь тысяч девятьсот сорок пять) тенге</b>.</li>
+<li>Новая стоимость заказа: <b>3 048 110 (три миллиона сорок восемь тысяч сто десять) тенге</b>.</li>
+<li>Дополнительная сумма к оплате: <b>879 165 (восемьсот семьдесят девять тысяч сто шестьдесят пять) тенге</b>.</li>
+</ul>
 
-<p>2.1. Заказчик обязуется оплатить дополнительную сумму в размере <b>879 165 (восемьсот семьдесят девять тысяч сто шестьдесят пять) тенге</b> в срок до «<input data-save="paymentDay" placeholder="___" style="width:38px">» <input data-save="paymentMonth" placeholder="__________" style="width:125px"> 2026 г.</p>
+<p>Заказчик обязуется оплатить разницу в размере 879 165 тенге в срок, согласованный сторонами: <input data-save="addendumDueDate" placeholder="Укажите дату" style="width:200px"></p>
 
-<p><b>5.3. Порядок оплаты</b></p>
-
-<div class="field">
-5.3.1. Предоплата:
-<input data-save="addendumPrepayment" type="number" min="0" max="100" step="0.01" value="0" style="width:80px">
-<span>%</span>
+<div style="margin: 14px 0; padding: 10px; border: 1px dashed #aaa; background: #fafafa;">
+<div class="field">5.3.1. Предоплата: <input data-save="addendumPrepayment" type="number" min="0" max="100" step="0.01" value="0" style="width:80px"> <span>%</span></div>
+<div class="field">5.3.2. Остаток: <input data-save="addendumBalance" type="number" readonly value="100" style="width:80px"> <span>%</span></div>
+<div id="addendumPaymentDetails" class="payment-details" style="margin-top:6px"></div>
+<p style="margin-top:6px; font-weight:bold;">Остаток оплачивается не позднее чем за 2 (два) рабочих дня до даты доставки.</p>
 </div>
 
-<div class="field">
-5.3.2. Остаток:
-<input data-save="addendumBalance" type="number" min="0" max="100" step="0.01" value="0" style="width:80px">
-<span>%</span>
-</div>
+<h3>3. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ</h3>
+<p>3.1. Настоящее дополнительное соглашение является неотъемлемой частью первоначального договора.</p>
+<p>3.2. Все остальные условия первоначального договора, не изменённые настоящим соглашением, сохраняют свою силу.</p>
+<p>3.3. Настоящее соглашение вступает в силу с момента его подписания обеими сторонами.</p>
 
-<div id="addendumPaymentDetails" class="payment-details">
-<b>Предоплата (0%): 0 ₸</b><br>
-<b>Остаток (0%): 0 ₸</b>
-</div>
-
-<p>Остаток оплачивается не позднее чем за 2 (два) рабочих дня до даты доставки.</p>
-
-<p><b>3. Заключительные положения</b></p>
-<p>3.1. Настоящее Дополнительное соглашение вступает в силу с момента его подписания обеими Сторонами.</p>
-<p>3.2. Во всём остальном, что не изменено настоящим Дополнительным соглашением, Стороны руководствуются условиями основного Договора.</p>
-<p>3.3. Настоящее Дополнительное соглашение составлено в двух экземплярах, имеющих одинаковую юридическую силу, по одному для каждой из Сторон.</p>
-
-<p style="margin-top:18px"><b>4. Подписи сторон</b></p>
+<p style="margin-top:20px"><b>Подписи сторон:</b></p>
 <div class="signature-grid">
-<div class="sign-line">
-<b>ИСПОЛНИТЕЛЬ</b>
-<p>ИП «ARTHOUSE_MOBILYA»</p>
-<p>Ерболат қызы Бибігүл</p>
-<canvas id="sig3"></canvas>
-<small>Подпись исполнителя</small>
-<button class="gray no-print" onclick="clearSig('sig3')">Очистить</button>
+<div class="sign-line"><b>Заказчик:</b><canvas id="sig4"></canvas><small>Подпись заказчика</small><button class="gray no-print" onclick="clearSig('sig4')">Очистить</button></div>
+<div class="sign-line"><b>Исполнитель:</b><canvas id="sig3"></canvas><small>Подпись исполнителя</small><button class="gray no-print" onclick="clearSig('sig3')">Очистить</button></div>
 </div>
-
-<div class="sign-line">
-<b>ЗАКАЗЧИК</b>
-<p>ФИО: <span id="addendumClientName">________________________</span></p>
-<canvas id="sig4"></canvas>
-<small>Подпись заказчика</small>
-<button class="gray no-print" onclick="clearSig('sig4')">Очистить</button>
-</div>
-</div>
-
-<p style="text-align:center;margin-top:26px"><b>Спасибо, что выбрали нас! Надеемся и дальше быть вам полезными.</b></p>
+<p style="text-align:center;margin-top:30px;font-weight:bold;">Спасибо, что выбрали нас! Надеемся и дальше быть вам полезными.</p>
 </section>
 </div>
 
