@@ -79,12 +79,288 @@ h3{break-after:avoid}
 .spec-totals{break-inside:avoid}
 }
 </style>
-<script src="script.js" defer></script>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'arthouse_contract_v2';
+  const canvases = ['sig1','sig2','sig3','sig4'];
+  const signatureData = {};
+
+  const fmt = n => new Intl.NumberFormat('ru-RU',{
+    maximumFractionDigits:2
+  }).format(Number(n)||0);
+
+  const numberWords = (value) => {
+    const n = Math.round(Number(value)||0);
+    if (!n) return 'ноль тенге';
+
+    const units = [
+      ['','один','два','три','четыре','пять','шесть','семь','восемь','девять'],
+      ['','одна','две','три','четыре','пять','шесть','семь','восемь','девять']
+    ];
+    const tens = ['','десять','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'];
+    const teens = ['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
+    const hundreds = ['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'];
+
+    function triad(x,feminine=false){
+      let s=[];
+      if(x>=100)s.push(hundreds[Math.floor(x/100)]);
+      x%=100;
+      if(x>=10&&x<20)s.push(teens[x-10]);
+      else{
+        if(x>=20)s.push(tens[Math.floor(x/10)]);
+        x%=10;
+        if(x)s.push(units[feminine?1:0][x]);
+      }
+      return s.join(' ');
+    }
+
+    const groups=[
+      {v:n%1000,f:false,names:['','тысяча','тысячи','тысяч']},
+      {v:Math.floor(n/1000)%1000,f:true,names:['тысяча','тысячи','тысяч','тысяч']},
+      {v:Math.floor(n/1e6)%1000,f:false,names:['миллион','миллиона','миллионов','миллионов']},
+      {v:Math.floor(n/1e9)%1000,f:false,names:['миллиард','миллиарда','миллиардов','миллиардов']}
+    ];
+
+    const parts=[];
+    for(let i=groups.length-1;i>=0;i--){
+      const g=groups[i];
+      if(!g.v)continue;
+      let phrase=triad(g.v,g.f);
+      if(i>0){
+        const last=g.v%10;
+        const last2=g.v%100;
+        const idx=(last2>=11&&last2<=14)?2:(last===1?0:([2,3,4].includes(last)?1:2));
+        phrase+=' '+g.names[idx];
+      }
+      parts.push(phrase);
+    }
+    return parts.join(' ')+' тенге';
+  };
+
+  function update(){
+    const total=Number(document.querySelector('[data-save="total"]')?.value)||0;
+    const pct=Number(document.querySelector('[data-save="prepayment"]')?.value)||0;
+    const balance=Math.max(0,100-pct);
+
+    const bal=document.querySelector('[data-save="balance"]');
+    if(bal)bal.value=balance;
+
+    const details=document.getElementById('paymentDetails');
+    if(details){
+      details.innerHTML=
+        `Предоплата (${fmt(pct)}%): ${fmt(total*pct/100)} ₸<br>`+
+        `Остаток (${fmt(balance)}%): ${fmt(total*balance/100)} ₸`;
+    }
+
+    // Дополнительное соглашение: проценты независимы
+    const addendumPct=Number(
+      document.querySelector('[data-save="addendumPrepayment"]')?.value
+    )||0;
+
+    const addendumBalance=Number(
+      document.querySelector('[data-save="addendumBalance"]')?.value
+    )||0;
+
+    const addendumAmount=879165;
+    const addendumDetails=document.getElementById('addendumPaymentDetails');
+
+    if(addendumDetails){
+      addendumDetails.innerHTML=
+        `<b>Предоплата (${fmt(addendumPct)}%): ${fmt(addendumAmount*addendumPct/100)} ₸</b><br>`+
+        `<b>Остаток (${fmt(addendumBalance)}%): ${fmt(addendumAmount*addendumBalance/100)} ₸</b>`;
+    }
+
+    const words=document.getElementById('totalWords');
+    if(words)words.textContent=total?`(${numberWords(total)})`:'';
+
+    const client=document.querySelector('[data-save="client"]')?.value||'';
+    const cn=document.getElementById('clientName');
+    if(cn)cn.textContent=client;
+
+    const acn=document.getElementById('addendumClientName');
+    if(acn)acn.textContent=client||'________________________';
+  }
+
+  function collect(){
+    const data={fields:{},signatures:signatureData};
+    document.querySelectorAll('[data-save]').forEach(el=>{
+      data.fields[el.dataset.save]=el.value;
+    });
+    return data;
+  }
+
+  function save(silent=false){
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(collect()));
+      if(!silent)alert('Данные договора сохранены в этом браузере.');
+    }catch(e){
+      if(!silent)alert('Не удалось сохранить данные в браузере.');
+    }
+  }
+
+  function clearSig(id){
+    const c=document.getElementById(id);
+    if(!c)return;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    delete signatureData[id];
+    save(true);
+  }
+
+  function setupCanvas(id){
+    const c=document.getElementById(id);
+    if(!c)return;
+
+    const ctx=c.getContext('2d');
+    let drawing=false,last=null;
+
+    const resize=()=>{
+      const old=signatureData[id];
+      const r=c.getBoundingClientRect();
+      const dpr=Math.max(1,window.devicePixelRatio||1);
+
+      c.width=Math.max(1,r.width*dpr);
+      c.height=Math.max(1,r.height*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.lineWidth=2;
+      ctx.lineCap='round';
+      ctx.lineJoin='round';
+      ctx.strokeStyle='#111';
+
+      if(old){
+        const im=new Image();
+        im.onload=()=>ctx.drawImage(im,0,0,r.width,r.height);
+        im.src=old;
+      }
+    };
+
+    resize();
+
+    const point=e=>{
+      const r=c.getBoundingClientRect();
+      return{x:e.clientX-r.left,y:e.clientY-r.top};
+    };
+
+    c.addEventListener('pointerdown',e=>{
+      e.preventDefault();
+      drawing=true;
+      last=point(e);
+      c.setPointerCapture?.(e.pointerId);
+      ctx.beginPath();
+      ctx.moveTo(last.x,last.y);
+    });
+
+    c.addEventListener('pointermove',e=>{
+      if(!drawing)return;
+      e.preventDefault();
+      const p=point(e);
+      ctx.lineTo(p.x,p.y);
+      ctx.stroke();
+      last=p;
+    });
+
+    const end=()=>{
+      if(!drawing)return;
+      drawing=false;
+      signatureData[id]=c.toDataURL('image/png');
+      save(true);
+    };
+
+    c.addEventListener('pointerup',end);
+    c.addEventListener('pointercancel',end);
+    c.addEventListener('lostpointercapture',end);
+
+    window.addEventListener('resize',()=>{
+      const d=signatureData[id];
+      resize();
+      if(d){
+        const im=new Image();
+        im.onload=()=>ctx.drawImage(im,0,0,c.clientWidth,c.clientHeight);
+        im.src=d;
+      }
+    });
+  }
+
+  function restore(){
+    try{
+      const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+
+      Object.entries(data.fields||{}).forEach(([k,v])=>{
+        const el=document.querySelector(`[data-save="${CSS.escape(k)}"]`);
+        if(el)el.value=v;
+      });
+
+      Object.assign(signatureData,data.signatures||{});
+
+      canvases.forEach(id=>{
+        if(signatureData[id]){
+          const c=document.getElementById(id);
+          if(c){
+            const im=new Image();
+            im.onload=()=>c.getContext('2d').drawImage(im,0,0,c.clientWidth,c.clientHeight);
+            im.src=signatureData[id];
+          }
+        }
+      });
+
+      // Однократный сброс старого автоматического значения остатка
+      const migrationKey='arthouse_addendum_manual_balance_v1';
+
+      if(!localStorage.getItem(migrationKey)){
+        const manualBalance=document.querySelector('[data-save="addendumBalance"]');
+        if(manualBalance)manualBalance.value='0';
+
+        localStorage.setItem(migrationKey,'1');
+        save(true);
+      }
+
+    }catch(e){}
+
+    update();
+  }
+
+  function resetAll(){
+    if(!confirm('Очистить все заполненные поля и подписи?'))return;
+
+    document.querySelectorAll('[data-save]').forEach(el=>{
+      el.value='';
+    });
+
+    canvases.forEach(clearSig);
+    localStorage.removeItem(STORAGE_KEY);
+    update();
+  }
+
+  window.save=save;
+  window.clearSig=clearSig;
+  window.resetAll=resetAll;
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    canvases.forEach(setupCanvas);
+    restore();
+
+    document.querySelectorAll('[data-save]').forEach(el=>{
+      el.addEventListener('input',()=>{
+        update();
+        save(true);
+      });
+
+      el.addEventListener('change',()=>{
+        update();
+        save(true);
+      });
+    });
+  });
+})();
+</script>
 </head>
+
 <body>
 <div class="page">
 <h1>ARTHOUSE MOBILYA</h1>
 <h2>ДОГОВОР НА ИЗГОТОВЛЕНИЕ МЕБЕЛИ НА ЗАКАЗ № <input data-save="number" placeholder="001" style="width:65px"></h2>
+
 <div class="grid">
 <div class="field">Город: <input value="Астана" data-save="city"></div>
 <div class="field">Дата: <input type="date" data-save="date"></div>
@@ -93,6 +369,7 @@ h3{break-after:avoid}
 <h3>1. СТОРОНЫ ДОГОВОРА</h3>
 <p><b>Исполнитель:</b> ИП «ARTHOUSE_MOBILYA»</p>
 <p>Руководитель: Ерболат қызы Бибігүл</p>
+
 <div class="grid">
 <div class="field">Заказчик, ФИО: <input data-save="client"></div>
 <div class="field">ИИН: <input data-save="iin"></div>
@@ -121,13 +398,21 @@ h3{break-after:avoid}
 <div class="field">4.1. Срок изготовления: <input data-save="days" type="number" style="max-width:100px"> календарных дней с момента наступления события, указанного в пункте 3.6.</div>
 
 <h3>5. СТОИМОСТЬ И ОПЛАТА</h3>
-<div class="field total-field">5.1. Общая стоимость работ: <input data-save="total" type="number" min="0" step="0.01" placeholder="Сумма в тенге"><span>₸</span><span id="totalWords" class="total-words"></span></div>
+<div class="field total-field">
+5.1. Общая стоимость работ:
+<input data-save="total" type="number" min="0" step="0.01" placeholder="Сумма в тенге">
+<span>₸</span>
+<span id="totalWords" class="total-words"></span>
+</div>
+
 <p>5.2. Стоимость, указанная в договоре, действительна на момент согласования проекта, составления договора и внесения предоплаты. В случае изменения цен на материалы, фурнитуру, курсов валют или иных объективных факторов до фактического поступления предоплаты Исполнитель вправе корректировать стоимость. Любые изменения согласовываются с Заказчиком письменно до начала производства.</p>
 <p>5.3. Порядок оплаты:</p>
+
 <div class="grid">
 <div class="field">5.3.1. Предоплата: <input data-save="prepayment" type="number" min="0" max="100" step="0.01" placeholder="30"><span>%</span></div>
 <div class="field">5.3.2. Остаток: <input data-save="balance" type="number" readonly><span>%</span></div>
 </div>
+
 <div id="paymentDetails" class="payment-details">Предоплата (0%): 0 ₸<br>Остаток (100%): 0 ₸</div>
 <p>Остаток оплачивается не позднее чем за 2 (два) рабочих дня до даты доставки.</p>
 
@@ -225,6 +510,7 @@ Instagram: ARTHOUSE MOBILYA
 <section class="specification">
 <h2>ПРИЛОЖЕНИЕ №1. СПЕЦИФИКАЦИЯ МЕБЕЛИ</h2>
 <div class="spec-meta">К Договору № 26053 от 10.11.2026</div>
+
 <div class="spec-table-wrap">
 <table class="spec-table">
 <colgroup>
@@ -269,6 +555,7 @@ Instagram: ARTHOUSE MOBILYA
 </div>
 
 <p class="spec-note">Примечание: блок питания и светодиодная лента для витражного шкафа приобретаются Заказчиком отдельно.</p>
+
 <table class="spec-totals">
 <tr><td>ИТОГО</td><td>₸3 386 789,41</td></tr>
 <tr><td>Скидка 10%</td><td>₸338 678,94</td></tr>
@@ -290,6 +577,7 @@ Instagram: ARTHOUSE MOBILYA
 <h2>ДОПОЛНИТЕЛЬНОЕ СОГЛАШЕНИЕ № <input data-save="addendumNumber" placeholder="___" style="width:65px"></h2>
 <p style="text-align:center">к Договору № 26053 от «10» ноября 2026 г.</p>
 <p style="text-align:center">г. Астана «<input data-save="addendumDay" placeholder="___" style="width:38px">» <input data-save="addendumMonth" placeholder="__________" style="width:125px"> 2026 г.</p>
+
 <p>ИП «ARTHOUSE_MOBILYA», в лице руководителя Ерболат қызы Бибігүл, именуемое в дальнейшем «Исполнитель», с одной стороны, и Заказчик, указанный в основном Договоре, с другой стороны, совместно именуемые «Стороны», заключили настоящее Дополнительное соглашение о нижеследующем:</p>
 
 <p><b>1. Изменение комплектации</b></p>
@@ -343,6 +631,7 @@ Instagram: ARTHOUSE MOBILYA
 <small>Подпись исполнителя</small>
 <button class="gray no-print" onclick="clearSig('sig3')">Очистить</button>
 </div>
+
 <div class="sign-line">
 <b>ЗАКАЗЧИК</b>
 <p>ФИО: <span id="addendumClientName">________________________</span></p>
